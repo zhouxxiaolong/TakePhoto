@@ -9,6 +9,7 @@ import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -170,7 +171,7 @@ public class TakePhotoActivity extends AppCompatActivity {
                     matrix.preRotate(90);
                     break;
                 case 1:
-                    matrix.preRotate(90);
+                    matrix.preRotate(270);
                     break;
             }
             bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
@@ -245,9 +246,9 @@ public class TakePhotoActivity extends AppCompatActivity {
      */
     private void saveImageToGallery(Context context, Bitmap bmp) {
         // 首先保存图片
-        File appDir = new File(getCacheDir(), "picture");
+        File appDir = new File(Environment.getExternalStorageDirectory(), "picture");
         if (!appDir.exists()) {
-            appDir.mkdirs();
+            appDir.mkdir();
         }
         String fileName = System.currentTimeMillis() + ".jpg";
         File file = new File(appDir, fileName);
@@ -256,21 +257,23 @@ public class TakePhotoActivity extends AppCompatActivity {
             bmp.compress(Bitmap.CompressFormat.JPEG, 100, fos);
             fos.flush();
             fos.close();
-            Toast.makeText(context, "拍照完成！", Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-            Toast.makeText(context, "保存图片失败", Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
 
         // 其次把文件插入到系统图库
         try {
-            MediaStore.Images.Media.insertImage(context.getContentResolver(), file.getAbsolutePath(), fileName, null);
+            MediaStore.Images.Media.insertImage(context.getContentResolver(),
+                    file.getAbsolutePath(), fileName, null);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-            Toast.makeText(context, "保存图片失败", Toast.LENGTH_SHORT).show();
         }
         // 最后通知图库更新
-        context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + file)));
+        context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + file.getPath())));
+
     }
 
     @Override
